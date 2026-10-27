@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware & Diagnostic Quest: Missão TechMais Soluções</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        senac: {
+                            blue: '#004582',
+                            orange: '#F37021',
+                            darkBlue: '#00284D',
+                            lightBlue: '#0073E6',
+                            gold: '#FFD700'
+                        }
+                    },
+                    fontFamily: {
+                        pixel: ['"Press Start 2P"', 'monospace'],
+                        sans: ['"Rajdhani"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #030814;
+            color: #f1f5f9;
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: manipulation;
+        }
+
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        /* Scanline and Grid FX */
+        .arcade-bg {
+            background: linear-gradient(rgba(0, 69, 130, 0.15) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0, 69, 130, 0.15) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .scanlines {
+            position: relative;
+            overflow: hidden;
+        }
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 20;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Cyberpunk Neon Glows */
+        .glow-orange {
+            box-shadow: 0 0 15px rgba(243, 112, 33, 0.6);
+        }
+        .glow-blue {
+            box-shadow: 0 0 15px rgba(0, 115, 230, 0.6);
+        }
+        .text-glow-orange {
+            text-shadow: 0 0 8px rgba(243, 112, 33, 0.8);
+        }
+        .text-glow-blue {
+            text-shadow: 0 0 8px rgba(0, 115, 230, 0.8);
+        }
+
+        /* Drag & Drop Visual State */
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+        .drag-over {
+            border-color: #F37021 !important;
+            background-color: rgba(243, 112, 33, 0.2) !important;
+        }
+
+        /* Animations */
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.02); }
+        }
+        .pulse-btn {
+            animation: pulse-fast 2s infinite;
+        }
+
+        /* Certificate Print styling */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-modal, #certificate-modal * {
+                visibility: visible;
+            }
+            #certificate-modal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen arcade-bg scanlines flex flex-col justify-between select-none">
+
+    <!-- TOP HEADER / HUD -->
+    <header class="bg-senac-darkBlue/90 border-b-2 border-senac-orange px-4 py-3 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="bg-senac-orange text-white font-black px-2 py-1 rounded text-xs pixel-font">SENAC</div>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wider text-white flex items-center gap-2">
+                    <i class="fa-solid fa-[#F37021] fa-microchip text-senac-orange"></i>
+                    <span>Hardware Quest</span>
+                </h1>
+            </div>
+
+            <!-- PLAYER HUD -->
+            <div id="hud" class="hidden flex items-center gap-4 bg-black/50 border border-senac-lightBlue/40 px-4 py-1.5 rounded-lg text-sm md:text-base">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-user text-senac-orange"></i>
+                    <span id="hud-student-name" class="font-semibold text-gray-200">Aluno</span>
+                </div>
+                <div class="h-4 w-px bg-gray-600"></div>
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-[#FFD700] fa-trophy text-senac-gold"></i>
+                    <span id="hud-score" class="pixel-font text-senac-gold text-xs">0000</span>
+                </div>
+                <div class="h-4 w-px bg-gray-600"></div>
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-layer-group text-senac-lightBlue"></i>
+                    <span id="hud-stage" class="font-bold text-senac-lightBlue">Fase 1/4</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN GAME CONTAINER -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-3 md:p-6 flex flex-col justify-center items-center">
+        
+        <!-- SCREEN 0: WELCOME & STUDENT REGISTRATION -->
+        <section id="screen-welcome" class="w-full bg-senac-darkBlue/80 border-2 border-senac-blue rounded-xl p-6 md:p-10 shadow-2xl backdrop-blur-sm text-center max-w-2xl">
+            <div class="inline-block p-4 bg-senac-blue/30 rounded-full border border-senac-orange mb-4">
+                <i class="fa-solid fa-laptop-code text-5xl text-senac-orange text-glow-orange"></i>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-2 uppercase tracking-wide">Missão TechMais Soluções</h2>
+            <p class="text-gray-300 text-sm md:text-base mb-6">
+                Bem-vindo ao Desafio Final da <span class="text-senac-orange font-bold">UC2 (Aula 09)</span>! Valide seus conhecimentos em diagnósticos de bancada, ecotriagem REEE e documentação técnica.
+            </p>
+
+            <form id="start-form" onsubmit="startGame(event)" class="space-y-4 text-left">
+                <div>
+                    <label for="student-name" class="block text-xs font-bold uppercase text-gray-300 mb-1">Nome Completo do Técnico(a):</label>
+                    <input type="text" id="student-name" required placeholder="Digite seu nome completo..." 
+                        class="w-full bg-black/60 border border-senac-lightBlue/50 focus:border-senac-orange rounded-lg px-4 py-3 text-white placeholder-gray-500 outline-none transition">
+                </div>
+                <div>
+                    <label for="student-class" class="block text-xs font-bold uppercase text-gray-300 mb-1">Turma / Unidade:</label>
+                    <input type="text" id="student-class" value="Assistente de TI - SENAC Sobradinho" readonly 
+                        class="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-2.5 text-gray-400 text-sm cursor-not-allowed">
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-senac-orange to-orange-600 hover:from-orange-500 hover:to-senac-orange text-white font-bold py-3.5 px-6 rounded-lg shadow-lg glow-orange transition transform hover:-translate-y-0.5 pixel-font text-xs md:text-sm pulse-btn">
+                    INICIAR MISSAO <i class="fa-solid fa-play ml-2"></i>
+                </button>
+            </form>
+        </section>
+
+        <!-- STAGE 1: DICIONÁRIO DE SIGLAS -->
+        <section id="screen-stage1" class="hidden w-full space-y-4">
+            <div class="bg-senac-darkBlue/90 border border-senac-lightBlue/40 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                    <span class="text-senac-orange font-bold text-xs uppercase tracking-wider">FASE 1 DE 4</span>
+                    <h3 class="text-xl font-bold text-white">Dicionário de Siglas de Hardware</h3>
+                </div>
+                <p class="text-xs text-gray-300 max-w-xs hidden sm:block">Relacione cada sigla técnica ao seu significado e função correspondente.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- SIGLAS (DRAGGABLE/CLICKABLE) -->
+                <div class="bg-black/50 border border-gray-800 rounded-xl p-4">
+                    <h4 class="text-xs font-bold text-senac-lightBlue uppercase mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-[#0073E6] fa-cubes"></i> 1. Selecione ou Arraste a Sigla:
+                    </h4>
+                    <div id="siglas-container" class="grid grid-cols-2 gap-2.5">
+                        <!-- Items injected dynamically -->
+                    </div>
+                </div>
+
+                <!-- DEFINIÇÕES (DROP TARGETS) -->
+                <div class="bg-black/50 border border-gray-800 rounded-xl p-4">
+                    <h4 class="text-xs font-bold text-senac-orange uppercase mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-bullseye"></i> 2. Associe com o Significado Correto:
+                    </h4>
+                    <div id="definitions-container" class="space-y-2.5">
+                        <!-- Targets injected dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <p id="stage1-feedback" class="text-sm font-semibold text-senac-orange h-6"></p>
+                <button id="btn-next-stage1" onclick="nextStage(2)" disabled class="bg-gray-700 text-gray-400 font-bold py-2.5 px-6 rounded-lg transition cursor-not-allowed text-sm">
+                    PRÓXIMA FASE <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- STAGE 2: DIAGNÓSTICO DE BANCADA & BEEPS -->
+        <section id="screen-stage2" class="hidden w-full space-y-4">
+            <div class="bg-senac-darkBlue/90 border border-senac-lightBlue/40 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                    <span class="text-senac-orange font-bold text-xs uppercase tracking-wider">FASE 2 DE 4</span>
+                    <h3 class="text-xl font-bold text-white">Diagnóstico de Bancada, POST & Beeps</h3>
+                </div>
+                <p class="text-xs text-gray-300 max-w-xs hidden sm:block">Ouça os sinais de áudio/LED do POST e identifique o componente com defeito.</p>
+            </div>
+
+            <div class="bg-black/60 border border-senac-blue/50 rounded-xl p-5 md:p-8 text-center relative overflow-hidden">
+                <!-- Virtual PC Speaker graphic -->
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-senac-darkBlue border-2 border-senac-orange mb-4 relative shadow-lg">
+                    <i id="beep-speaker-icon" class="fa-solid fa-volume-high text-4xl text-senac-orange"></i>
+                    <div id="beep-wave" class="absolute inset-0 rounded-full border border-senac-orange opacity-0 scale-100"></div>
+                </div>
+
+                <h4 id="beep-case-title" class="text-lg font-bold text-white mb-1">Caso #1: Falha na Inicialização</h4>
+                <p id="beep-case-desc" class="text-sm text-gray-300 max-w-md mx-auto mb-5">O computador liga, os ventiladores giram na velocidade máxima, mas não há vídeo no monitor.</p>
+
+                <!-- AUDIO EMITTER BUTTON -->
+                <button onclick="playCurrentBeepSound()" class="inline-flex items-center gap-2 bg-senac-lightBlue hover:bg-blue-600 text-white font-bold py-2.5 px-5 rounded-full text-sm transition glow-blue mb-6">
+                    <i class="fa-solid fa-play"></i> OUVIR CÓDIGO BEEP DO BEEP-BUZZER
+                </button>
+
+                <!-- DIAGNOSIS OPTIONS -->
+                <div class="max-w-xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3" id="beep-options-container">
+                    <!-- Options injected dynamically -->
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <p id="stage2-feedback" class="text-sm font-semibold text-senac-orange h-6"></p>
+                <button id="btn-next-stage2" onclick="nextStage(3)" disabled class="bg-gray-700 text-gray-400 font-bold py-2.5 px-6 rounded-lg transition cursor-not-allowed text-sm">
+                    PRÓXIMA FASE <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- STAGE 3: ECOTRIAGEM VERDE REEE -->
+        <section id="screen-stage3" class="hidden w-full space-y-4">
+            <div class="bg-senac-darkBlue/90 border border-senac-lightBlue/40 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                    <span class="text-senac-orange font-bold text-xs uppercase tracking-wider">FASE 3 DE 4</span>
+                    <h3 class="text-xl font-bold text-white">Ecotriagem e Descarte Sustentável (REEE)</h3>
+                </div>
+                <p class="text-xs text-gray-300 max-w-xs hidden sm:block">Segregue o lixo eletrônico e insumos de limpeza nas lixeiras adequadas.</p>
+            </div>
+
+            <!-- RESÍDUOS DISPONÍVEIS -->
+            <div class="bg-black/50 border border-gray-800 rounded-xl p-4">
+                <h4 class="text-xs font-bold text-senac-orange uppercase mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-recycle"></i> Clique ou Arraste o Resíduo para a Lixeira Correta:
+                </h4>
+                <div id="waste-items-container" class="flex flex-wrap gap-2.5 justify-center">
+                    <!-- Waste items injected dynamically -->
+                </div>
+            </div>
+
+            <!-- LIXEIRAS DE DESTINAÇÃO -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- LIXEIRA RECICLÁVEIS -->
+                <div id="bin-recyclable" data-bin="recyclable" class="waste-bin border-2 border-emerald-500/50 bg-emerald-950/30 rounded-xl p-4 flex flex-col items-center justify-between min-h-[160px] transition">
+                    <div class="text-center">
+                        <i class="fa-solid fa-box-open text-3xl text-emerald-400 mb-1"></i>
+                        <h5 class="font-bold text-emerald-300 text-sm uppercase">1. Recicláveis Comuns</h5>
+                        <p class="text-[11px] text-emerald-200/70">Papelão, caixas e plásticos de conectores novos</p>
+                    </div>
+                    <div class="bin-contents w-full space-y-1 mt-3"></div>
+                </div>
+
+                <!-- LIXEIRA ELETRÔNICOS REEE -->
+                <div id="bin-reee" data-bin="reee" class="waste-bin border-2 border-amber-500/50 bg-amber-950/30 rounded-xl p-4 flex flex-col items-center justify-between min-h-[160px] transition">
+                    <div class="text-center">
+                        <i class="fa-solid fa-dumpster-fire text-3xl text-amber-400 mb-1"></i>
+                        <h5 class="font-bold text-amber-300 text-sm uppercase">2. Eletrônicos (REEE)</h5>
+                        <p class="text-[11px] text-amber-200/70">Baterias CR2032, conectores e cabos danificados</p>
+                    </div>
+                    <div class="bin-contents w-full space-y-1 mt-3"></div>
+                </div>
+
+                <!-- LIXEIRA QUÍMICOS -->
+                <div id="bin-chemical" data-bin="chemical" class="waste-bin border-2 border-rose-500/50 bg-rose-950/30 rounded-xl p-4 flex flex-col items-center justify-between min-h-[160px] transition">
+                    <div class="text-center">
+                        <i class="fa-solid fa-flask-vial text-3xl text-rose-400 mb-1"></i>
+                        <h5 class="font-bold text-rose-300 text-sm uppercase">3. Resíduos Químicos</h5>
+                        <p class="text-[11px] text-rose-200/70">Panos sujos de graxa/álcool e spray despressurizados</p>
+                    </div>
+                    <div class="bin-contents w-full space-y-1 mt-3"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <p id="stage3-feedback" class="text-sm font-semibold text-senac-orange h-6"></p>
+                <button id="btn-next-stage3" onclick="nextStage(4)" disabled class="bg-gray-700 text-gray-400 font-bold py-2.5 px-6 rounded-lg transition cursor-not-allowed text-sm">
+                    PRÓXIMA FASE <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- STAGE 4: DESAFIO HANDOFF TECHMAIS -->
+        <section id="screen-stage4" class="hidden w-full space-y-4">
+            <div class="bg-senac-darkBlue/90 border border-senac-lightBlue/40 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                    <span class="text-senac-orange font-bold text-xs uppercase tracking-wider">FASE 4 DE 4</span>
+                    <h3 class="text-xl font-bold text-white">Desafio Handoff & Parecer Técnico</h3>
+                </div>
+                <p class="text-xs text-gray-300 max-w-xs hidden sm:block">Simulação de atendimento final e relatório para a empresa TechMais Soluções.</p>
+            </div>
+
+            <div class="bg-black/60 border border-senac-blue/50 rounded-xl p-5 md:p-6">
+                <div class="flex items-center gap-3 border-b border-gray-700 pb-3 mb-4">
+                    <div class="bg-senac-orange/20 p-2.5 rounded-lg text-senac-orange">
+                        <i class="fa-solid fa-file-signature text-2xl"></i>
+                    </div>
+                    <div>
+                        <span id="quiz-progress" class="text-xs text-senac-lightBlue font-bold">QUESTÃO 1 DE 3</span>
+                        <h4 id="quiz-question-title" class="text-base md:text-lg font-bold text-white">Título da Questão...</h4>
+                    </div>
+                </div>
+
+                <div id="quiz-options-container" class="space-y-2.5 mb-4">
+                    <!-- Quiz options injected dynamically -->
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <p id="stage4-feedback" class="text-sm font-semibold text-senac-orange h-6"></p>
+                <button id="btn-finish-game" onclick="finishGame()" disabled class="bg-gray-700 text-gray-400 font-bold py-3 px-8 rounded-lg transition cursor-not-allowed text-sm pixel-font">
+                    CONCLUIR MISSAO <i class="fa-solid fa-flag-checkered ml-1"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 5: GAME COMPLETE / CERTIFICATE MODAL -->
+        <section id="screen-summary" class="hidden w-full max-w-3xl my-auto">
+            <div class="bg-senac-darkBlue/95 border-2 border-senac-orange rounded-2xl p-6 md:p-8 shadow-2xl text-center space-y-6">
+                
+                <div class="inline-block p-4 bg-senac-gold/10 rounded-full border border-senac-gold">
+                    <i class="fa-solid fa-award text-5xl text-senac-gold"></i>
+                </div>
+
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-black text-white uppercase tracking-wider">Missão Cumprida com Sucesso!</h2>
+                    <p class="text-gray-300 text-sm mt-1">Sua validação técnica para a <span class="text-senac-orange font-bold">TechMais Soluções</span> foi finalizada.</p>
+                </div>
+
+                <!-- FINAL STATS -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-black/50 p-4 rounded-xl border border-gray-800 text-left">
+                    <div>
+                        <span class="text-[11px] text-gray-400 uppercase font-bold block">Técnico(a):</span>
+                        <span id="res-student-name" class="font-bold text-white text-sm truncate block">-</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-gray-400 uppercase font-bold block">Pontuação Final:</span>
+                        <span id="res-score" class="pixel-font text-senac-gold text-base block">0000 Pts</span>
+                    </div>
+                    <div class="col-span-2 sm:col-span-1">
+                        <span class="text-[11px] text-gray-400 uppercase font-bold block">Qualificação:</span>
+                        <span id="res-rank" class="font-bold text-emerald-400 text-sm block">Técnico Destaque</span>
+                    </div>
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="flex flex-col sm:flex-row gap-3 justify-center no-print">
+                    <button onclick="openCertificateModal()" class="flex-1 bg-gradient-to-r from-senac-orange to-orange-600 hover:from-orange-500 hover:to-senac-orange text-white font-bold py-3 px-5 rounded-lg shadow-lg text-sm flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-certificate text-lg"></i> GERAR CERTIFICADO OFICIAL
+                    </button>
+                    <button onclick="location.reload()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 px-5 rounded-lg text-sm flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-rotate-right"></i> JOGAR NOVAMENTE
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-black/80 border-t border-gray-800 py-3 px-4 text-center text-xs text-gray-500 no-print">
+        SENAC CEP Sobradinho • Curso de Assistente de Tecnologia da Informação • UC2 (Aula 09)
+    </footer>
+
+    <!-- CERTIFICATE MODAL CONTAINER -->
+    <div id="certificate-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+        <div class="bg-white text-slate-900 rounded-xl p-8 max-w-3xl w-full border-8 border-senac-blue shadow-2xl relative">
+            
+            <!-- CLOSE BUTTON FOR MODAL -->
+            <button onclick="closeCertificateModal()" class="no-print absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- CERTIFICATE HEADER -->
+            <div class="flex justify-between items-center border-b-2 border-senac-orange pb-4 mb-6">
+                <div>
+                    <h2 class="text-3xl font-black text-senac-blue tracking-tight">SENAC DF</h2>
+                    <p class="text-xs text-gray-600 font-semibold uppercase tracking-wider">Centro de Educação Profissional de Sobradinho</p>
+                </div>
+                <div class="text-right">
+                    <span class="bg-senac-orange text-white text-[10px] font-bold px-2.5 py-1 rounded uppercase tracking-widest">Certificado Técnico</span>
+                </div>
+            </div>
+
+            <!-- CERTIFICATE BODY -->
+            <div class="text-center my-6 space-y-4">
+                <p class="text-sm text-gray-600 uppercase tracking-widest font-semibold">Certificamos que o(a) aluno(a)</p>
+                <h3 id="cert-student-name" class="text-2xl md:text-3xl font-black text-senac-blue underline decoration-senac-orange uppercase">NOME DO ALUNO</h3>
+                <p class="text-sm text-gray-700 max-w-xl mx-auto leading-relaxed">
+                    concluiu com êxito a simulação prática de bancada <strong>"Hardware & Diagnostic Quest: Missão TechMais Soluções"</strong> referente à <strong>UC2 - Aula 09</strong>, demonstrando competência em diagnósticos de POST, descarte responsável de REEE e elaboração de laudo técnico.
+                </p>
+
+                <div class="inline-flex gap-6 justify-center bg-gray-50 border border-gray-200 px-6 py-3 rounded-lg text-left text-xs my-2">
+                    <div>
+                        <span class="text-gray-500 block">Pontuação Final:</span>
+                        <strong id="cert-score" class="text-senac-blue font-bold text-sm">0000 Pts</strong>
+                    </div>
+                    <div class="h-8 w-px bg-gray-300"></div>
+                    <div>
+                        <span class="text-gray-500 block">Aproveitamento:</span>
+                        <strong id="cert-rank" class="text-emerald-600 font-bold text-sm">Técnico Destaque (100%)</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CERTIFICATE FOOTER -->
+            <div class="pt-8 border-t border-gray-200 flex justify-between items-end text-xs text-gray-500">
+                <div>
+                    <p class="font-bold text-gray-800">Instrutor Responsável / Docência TI</p>
+                    <p>SENAC CEP Sobradinho - DF</p>
+                </div>
+                <div class="text-right">
+                    <p id="cert-date">Data: --/--/2026</p>
+                    <p class="text-[10px] text-gray-400">ID de Validação: SENAC-UC2-A09-OK</p>
+                </div>
+            </div>
+
+            <!-- PRINT / DOWNLOAD BUTTON -->
+            <div class="mt-6 flex justify-center gap-3 no-print">
+                <button onclick="window.print()" class="bg-senac-blue hover:bg-senac-darkBlue text-white font-bold py-2.5 px-6 rounded-lg text-sm flex items-center gap-2 shadow">
+                    <i class="fa-solid fa-print"></i> IMPRIMIR / SALVAR PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO SYNTHESIZER AND GAME LOGIC -->
+    <script>
+        /* ==========================================================================
+           AUDIO SYNTHESIZER (Web Audio API - No external audio files required)
+           ========================================================================== */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.setValueAtTime(110, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        // Custom Beep sound generator for Stage 2
+        function playBeepPattern(patternType) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const icon = document.getElementById('beep-speaker-icon');
+            const wave = document.getElementById('beep-wave');
+            icon.classList.add('text-glow-orange');
+            wave.style.opacity = '1';
+            wave.style.transform = 'scale(1.4)';
+            
+            setTimeout(() => {
+                icon.classList.remove('text-glow-orange');
+                wave.style.opacity = '0';
+                wave.style.transform = 'scale(1)';
+            }, 1200);
+
+            const now = audioCtx.currentTime;
+
+            if (patternType === 'ram') {
+                // Continuous long beeps (RAM error)
+                [0, 0.4, 0.8].forEach(timeOffset => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(800, now + timeOffset);
+                    gain.gain.setValueAtTime(0.15, now + timeOffset);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + timeOffset + 0.3);
+                    osc.start(now + timeOffset);
+                    osc.stop(now + timeOffset + 0.3);
+                });
+            } else if (patternType === 'gpu') {
+                // 1 long, 2 short beeps (GPU error)
+                const times = [
+                    { t: 0, d: 0.4 },
+                    { t: 0.5, d: 0.15 },
+                    { t: 0.75, d: 0.15 }
+                ];
+                times.forEach(item => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(750, now + item.t);
+                    gain.gain.setValueAtTime(0.15, now + item.t);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + item.t + item.d);
+                    osc.start(now + item.t);
+                    osc.stop(now + item.t + item.d);
+                });
+            } else if (patternType === 'battery') {
+                // Single short beep + silent prompt
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(900, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            }
+        }
+
+        /* ==========================================================================
+           GAME STATE & DATA
+           ========================================================================== */
+        let gameState = {
+            studentName: '',
+            score: 0,
+            currentStage: 1,
+            selectedSigla: null,
+            selectedWaste: null,
+            stage1Matched: 0,
+            stage2CaseIdx: 0,
+            stage3Sorted: 0,
+            stage4QuizIdx: 0
+        };
+
+        // Stage 1 Data
+        const stage1Data = [
+            { id: 'ram', label: 'RAM', desc: 'Memória volátil de alta velocidade para execução de programas e sistema.' },
+            { id: 'rom', label: 'ROM', desc: 'Memória não-volátil somente de leitura que grava o firmware de fábrica.' },
+            { id: 'post', label: 'POST', desc: 'Autoteste de inicialização do hardware executado ao ligar o computador.' },
+            { id: 'bios', label: 'BIOS', desc: 'Firmware legado tradicional de 16 bits responsável pela carga do sistema.' },
+            { id: 'uefi', label: 'UEFI', desc: 'Interface de firmware moderna com suporte gráfico, mouse e discos > 2TB.' },
+            { id: 'cmos', label: 'CMOS', desc: 'Chip de baixo consumo que guarda as configurações personalizadas da BIOS.' }
+        ];
+
+        // Stage 2 Data
+        const stage2Data = [
+            {
+                title: 'Caso #1: Falha Gravíssima no POST',
+                desc: 'A placa-mãe liga, os coolers giram, mas o buzzer emite BEEP repetido/contínuo sem dar vídeo.',
+                beepType: 'ram',
+                correct: 'ram',
+                options: [
+                    { id: 'ram', label: 'Mau Contato ou Sujeira nos Slots de RAM', icon: 'fa-memory' },
+                    { id: 'gpu', label: 'Placa de Vídeo Danificada (VGA)', icon: 'fa-tv' },
+                    { id: 'cpu', label: 'Processador Sem Pasta Térmica', icon: 'fa-microchip' },
+                    { id: 'battery', label: 'Bateria CR2032 Esgotada', icon: 'fa-battery-empty' }
+                ]
+            },
+            {
+                title: 'Caso #2: Erro de Exibição de Vídeo',
+                desc: 'O computador emite 1 Beep Longo seguido de 2 Beeps Curtos logo após ser ligado.',
+                beepType: 'gpu',
+                correct: 'gpu',
+                options: [
+                    { id: 'ram', label: 'Pente de Memória Desencaixado', icon: 'fa-memory' },
+                    { id: 'gpu', label: 'Falha ou Mau Contato no Vídeo/VGA', icon: 'fa-tv' },
+                    { id: 'cpu', label: 'Superaquecimento na CPU', icon: 'fa-microchip' },
+                    { id: 'battery', label: 'Cabo RJ-45 sem Crimpagem', icon: 'fa-network-wired' }
+                ]
+            },
+            {
+                title: 'Caso #3: Reset de Relógio e BIOS',
+                desc: 'O computador liga normalmente (1 beep curto), mas exibe mensagem "CMOS Checksum Error" e reseta a hora.',
+                beepType: 'battery',
+                correct: 'battery',
+                options: [
+                    { id: 'ram', label: 'Módulo de RAM Defeituoso', icon: 'fa-memory' },
+                    { id: 'gpu', label: 'Sobrecarga na Fonte de Alimentação', icon: 'fa-plug' },
+                    { id: 'battery', label: 'Bateria de Lítio CR2032 (3V) Esgotada', icon: 'fa-battery-empty' },
+                    { id: 'cpu', label: 'Troca Necessária do Processador', icon: 'fa-microchip' }
+                ]
+            }
+        ];
+
+        // Stage 3 Data
+        const stage3Data = [
+            { id: 'w1', name: 'Bateria CR2032 Esgotada', category: 'reee', icon: 'fa-battery-quarter' },
+            { id: 'w2', name: 'Caixa de Papelão do SSD', category: 'recyclable', icon: 'fa-box' },
+            { id: 'w3', name: 'Pano com Álcool Isopropílico', category: 'chemical', icon: 'fa-toilet-paper' },
+            { id: 'w4', name: 'Sobra de Cabo UTP/RJ-45', category: 'reee', icon: 'fa-network-wired' },
+            { id: 'w5', name: 'Embalagem Plástica de Conectores', category: 'recyclable', icon: 'fa-bag-shopping' },
+            { id: 'w6', name: 'Lata Limpa-Contatos Esgotada', category: 'chemical', icon: 'fa-spray-can' }
+        ];
+
+        // Stage 4 Data (TechMais Quiz)
+        const stage4Data = [
+            {
+                question: 'Ao finalizar o atendimento da TechMais Soluções, qual comando nativo do PowerShell (sem admin) você usa para validar a saúde do SSD?',
+                options: [
+                    'Get-PhysicalDisk | Select-Object DeviceId, OperationalStatus, HealthStatus',
+                    'format C: /fs:ntfs /q',
+                    'del /f /s /q C:\\Windows\\System32',
+                    'systeminfo --override-admin-rights'
+                ],
+                correct: 0
+            },
+            {
+                question: 'Para limpar os contatos de memória RAM com sujeira acumulada de forma segura na bancada, o que o técnico deve utilizar?',
+                options: [
+                    'Álcool 70% comercial e água corrente',
+                    'Pincel ESD / Trincha 3/4" e Limpa Contatos / Álcool Isopropílico 99.8%',
+                    'Palha de aço e detergente neutro',
+                    'Soprador térmico a 400°C sobre os chips de memória'
+                ],
+                correct: 1
+            },
+            {
+                question: 'Qual é a atitude profissional correta referente aos resíduos gerados na manutenção antes da entrega do equipamento?',
+                options: [
+                    'Deixar as baterias velhas dentro do gabinete do cliente',
+                    'Descartar todos os panos e baterias no lixo comum de papel do laboratório',
+                    'Realizar a ecotriagem separando REEE e direcionar baterias ao ponto de coleta seletiva',
+                    'Queimar as sobras de cabos UTP na área externa do SENAC'
+                ],
+                correct: 2
+            }
+        ];
+
+        /* ==========================================================================
+           GAME FLOW CONTROLLERS
+           ========================================================================== */
+        function startGame(e) {
+            e.preventDefault();
+            playSound('click');
+            
+            const nameInput = document.getElementById('student-name').value.trim();
+            if (!nameInput) return;
+
+            gameState.studentName = nameInput;
+            document.getElementById('hud-student-name').textContent = nameInput;
+            
+            // Hide Welcome & Show HUD
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+
+            initStage1();
+        }
+
+        function updateScore(points) {
+            gameState.score += points;
+            document.getElementById('hud-score').textContent = String(gameState.score).padStart(4, '0');
+        }
+
+        function nextStage(stageNum) {
+            playSound('click');
+            gameState.currentStage = stageNum;
+            document.getElementById('hud-stage').textContent = `Fase ${stageNum}/4`;
+
+            // Hide all stages
+            ['screen-stage1', 'screen-stage2', 'screen-stage3', 'screen-stage4'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (stageNum === 2) initStage2();
+            if (stageNum === 3) initStage3();
+            if (stageNum === 4) initStage4();
+        }
+
+        /* ==========================================================================
+           STAGE 1 LOGIC: SIGLAS & DEFINITIONS
+           ========================================================================== */
+        function initStage1() {
+            document.getElementById('screen-stage1').classList.remove('hidden');
+            
+            const siglasContainer = document.getElementById('siglas-container');
+            const defsContainer = document.getElementById('definitions-container');
+            
+            siglasContainer.innerHTML = '';
+            defsContainer.innerHTML = '';
+
+            // Shuffle items
+            const shuffledSiglas = [...stage1Data].sort(() => Math.random() - 0.5);
+            const shuffledDefs = [...stage1Data].sort(() => Math.random() - 0.5);
+
+            shuffledSiglas.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'sigla-btn bg-senac-darkBlue hover:bg-senac-blue border border-senac-lightBlue text-white font-bold p-3 rounded-lg text-sm transition text-center flex items-center justify-center gap-2';
+                btn.dataset.id = item.id;
+                btn.innerHTML = `<i class="fa-solid fa-microchip text-senac-orange"></i> <span>${item.label}</span>`;
+                btn.onclick = () => selectSigla(btn);
+                siglasContainer.appendChild(btn);
+            });
+
+            shuffledDefs.forEach(item => {
+                const target = document.createElement('div');
+                target.className = 'def-target bg-black/60 border border-gray-700 hover:border-senac-orange p-3 rounded-lg text-xs text-gray-300 transition cursor-pointer flex justify-between items-center gap-2';
+                target.dataset.id = item.id;
+                target.innerHTML = `<span>${item.desc}</span> <i class="fa-regular fa-square text-gray-500 text-base"></i>`;
+                target.onclick = () => matchDefinition(target);
+                defsContainer.appendChild(target);
+            });
+        }
+
+        function selectSigla(btn) {
+            playSound('click');
+            document.querySelectorAll('.sigla-btn').forEach(b => b.classList.remove('ring-2', 'ring-senac-orange', 'bg-senac-blue'));
+            btn.classList.add('ring-2', 'ring-senac-orange', 'bg-senac-blue');
+            gameState.selectedSigla = btn.dataset.id;
+        }
+
+        function matchDefinition(target) {
+            if (!gameState.selectedSigla) {
+                document.getElementById('stage1-feedback').textContent = '⚠️ Selecione uma sigla à esquerda primeiro!';
+                return;
+            }
+
+            const feedback = document.getElementById('stage1-feedback');
+            const selectedBtn = document.querySelector(`.sigla-btn[data-id="${gameState.selectedSigla}"]`);
+
+            if (gameState.selectedSigla === target.dataset.id) {
+                playSound('correct');
+                updateScore(100);
+                
+                target.className = 'def-target bg-emerald-950/60 border border-emerald-500 p-3 rounded-lg text-xs text-emerald-200 flex justify-between items-center gap-2 pointer-events-none';
+                target.querySelector('i').className = 'fa-solid fa-square-check text-emerald-400 text-base';
+
+                selectedBtn.disabled = true;
+                selectedBtn.className = 'sigla-btn bg-gray-800 border border-gray-700 text-gray-500 font-bold p-3 rounded-lg text-sm cursor-not-allowed text-center opacity-50';
+
+                gameState.selectedSigla = null;
+                gameState.stage1Matched++;
+                feedback.textContent = '✨ Associação Correta! +100 Pontos';
+
+                if (gameState.stage1Matched === stage1Data.length) {
+                    feedback.textContent = '🎉 Fase 1 Concluída com Sucesso!';
+                    const nextBtn = document.getElementById('btn-next-stage1');
+                    nextBtn.disabled = false;
+                    nextBtn.className = 'bg-senac-orange hover:bg-orange-600 text-white font-bold py-2.5 px-6 rounded-lg transition text-sm glow-orange pulse-btn';
+                }
+            } else {
+                playSound('error');
+                feedback.textContent = '❌ Associação Incorreta. Tente novamente!';
+            }
+        }
+
+        /* ==========================================================================
+           STAGE 2 LOGIC: BEEPS & DIAGNOSTICS
+           ========================================================================== */
+        function initStage2() {
+            document.getElementById('screen-stage2').classList.remove('hidden');
+            loadBeepCase(gameState.stage2CaseIdx);
+        }
+
+        function loadBeepCase(idx) {
+            const caseData = stage2Data[idx];
+            document.getElementById('beep-case-title').textContent = caseData.title;
+            document.getElementById('beep-case-desc').textContent = caseData.desc;
+            document.getElementById('stage2-feedback').textContent = '';
+
+            const container = document.getElementById('beep-options-container');
+            container.innerHTML = '';
+
+            caseData.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-senac-darkBlue hover:bg-senac-blue border border-senac-lightBlue/50 text-white font-semibold p-3.5 rounded-xl text-xs md:text-sm transition flex items-center gap-3 text-left';
+                btn.innerHTML = `<i class="fa-solid ${opt.icon} text-lg text-senac-orange"></i> <span>${opt.label}</span>`;
+                btn.onclick = () => checkBeepAnswer(opt.id, caseData.correct);
+                container.appendChild(btn);
+            });
+        }
+
+        function playCurrentBeepSound() {
+            const currentCase = stage2Data[gameState.stage2CaseIdx];
+            playBeepPattern(currentCase.beepType);
+        }
+
+        function checkBeepAnswer(selected, correct) {
+            const feedback = document.getElementById('stage2-feedback');
+            
+            if (selected === correct) {
+                playSound('correct');
+                updateScore(150);
+                feedback.textContent = '🎯 Diagnóstico Exato! +150 Pontos';
+
+                gameState.stage2CaseIdx++;
+                if (gameState.stage2CaseIdx < stage2Data.length) {
+                    setTimeout(() => loadBeepCase(gameState.stage2CaseIdx), 1200);
+                } else {
+                    feedback.textContent = '🎉 Fase 2 Concluída! Todos os diagnósticos validados.';
+                    const nextBtn = document.getElementById('btn-next-stage2');
+                    nextBtn.disabled = false;
+                    nextBtn.className = 'bg-senac-orange hover:bg-orange-600 text-white font-bold py-2.5 px-6 rounded-lg transition text-sm glow-orange pulse-btn';
+                }
+            } else {
+                playSound('error');
+                feedback.textContent = '❌ Hipótese incorreta. Escute o beep e analise os sintomas novamente.';
+            }
+        }
+
+        /* ==========================================================================
+           STAGE 3 LOGIC: ECOTRIAGEM REEE
+           ========================================================================== */
+        function initStage3() {
+            document.getElementById('screen-stage3').classList.remove('hidden');
+            
+            const container = document.getElementById('waste-items-container');
+            container.innerHTML = '';
+
+            stage3Data.forEach(item => {
+                const badge = document.createElement('div');
+                badge.className = 'waste-item bg-senac-darkBlue hover:bg-senac-blue border border-senac-lightBlue text-white text-xs font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2 transition';
+                badge.dataset.id = item.id;
+                badge.dataset.category = item.category;
+                badge.innerHTML = `<i class="fa-solid ${item.icon} text-senac-orange"></i> <span>${item.name}</span>`;
+                badge.onclick = () => selectWaste(badge);
+                container.appendChild(badge);
+            });
+
+            // Set bin click listeners
+            document.querySelectorAll('.waste-bin').forEach(bin => {
+                bin.onclick = () => dropWasteInBin(bin);
+            });
+        }
+
+        function selectWaste(el) {
+            playSound('click');
+            document.querySelectorAll('.waste-item').forEach(w => w.classList.remove('ring-2', 'ring-senac-orange'));
+            el.classList.add('ring-2', 'ring-senac-orange');
+            gameState.selectedWaste = el;
+        }
+
+        function dropWasteInBin(bin) {
+            if (!gameState.selectedWaste) {
+                document.getElementById('stage3-feedback').textContent = '⚠️ Clique em um resíduo acima para selecionar!';
+                return;
+            }
+
+            const feedback = document.getElementById('stage3-feedback');
+            const targetBinCategory = bin.dataset.bin;
+            const itemCategory = gameState.selectedWaste.dataset.category;
+
+            if (itemCategory === targetBinCategory) {
+                playSound('correct');
+                updateScore(100);
+
+                // Move visual element into bin
+                const binContents = bin.querySelector('.bin-contents');
+                const tag = document.createElement('div');
+                tag.className = 'text-[11px] bg-black/40 px-2 py-1 rounded text-white font-semibold flex items-center gap-1.5';
+                tag.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> ${gameState.selectedWaste.textContent}`;
+                binContents.appendChild(tag);
+
+                gameState.selectedWaste.remove();
+                gameState.selectedWaste = null;
+                gameState.stage3Sorted++;
+
+                feedback.textContent = '♻️ Descarte Ecologicamente Correto! +100 Pontos';
+
+                if (gameState.stage3Sorted === stage3Data.length) {
+                    feedback.textContent = '🎉 Ecotriagem Finalizada com 100% de Aproveitamento!';
+                    const nextBtn = document.getElementById('btn-next-stage3');
+                    nextBtn.disabled = false;
+                    nextBtn.className = 'bg-senac-orange hover:bg-orange-600 text-white font-bold py-2.5 px-6 rounded-lg transition text-sm glow-orange pulse-btn';
+                }
+            } else {
+                playSound('error');
+                feedback.textContent = '❌ Lixeira Incorreta! Atente-se ao tipo de resíduo.';
+            }
+        }
+
+        /* ==========================================================================
+           STAGE 4 LOGIC: TECHMAIS QUIZ
+           ========================================================================== */
+        function initStage4() {
+            document.getElementById('screen-stage4').classList.remove('hidden');
+            loadQuizQuestion(gameState.stage4QuizIdx);
+        }
+
+        function loadQuizQuestion(idx) {
+            const q = stage4Data[idx];
+            document.getElementById('quiz-progress').textContent = `QUESTÃO ${idx + 1} DE ${stage4Data.length}`;
+            document.getElementById('quiz-question-title').textContent = q.question;
+            document.getElementById('stage4-feedback').textContent = '';
+
+            const container = document.getElementById('quiz-options-container');
+            container.innerHTML = '';
+
+            q.options.forEach((optText, optIdx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full bg-senac-darkBlue hover:bg-senac-blue border border-senac-lightBlue/40 text-gray-100 p-3.5 rounded-xl text-xs md:text-sm text-left transition flex items-center gap-3';
+                btn.innerHTML = `<span class="bg-senac-orange/20 text-senac-orange font-bold px-2.5 py-1 rounded text-xs">${String.fromCharCode(65 + optIdx)}</span> <span>${optText}</span>`;
+                btn.onclick = () => checkQuizAnswer(optIdx, q.correct);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkQuizAnswer(selectedIdx, correctIdx) {
+            const feedback = document.getElementById('stage4-feedback');
+
+            if (selectedIdx === correctIdx) {
+                playSound('correct');
+                updateScore(200);
+                feedback.textContent = '✅ Parecer Técnico Perfeito! +200 Pontos';
+
+                gameState.stage4QuizIdx++;
+                if (gameState.stage4QuizIdx < stage4Data.length) {
+                    setTimeout(() => loadQuizQuestion(gameState.stage4QuizIdx), 1200);
+                } else {
+                    feedback.textContent = '🏆 Missão Cumprida! Pronto para o laudo final.';
+                    const finishBtn = document.getElementById('btn-finish-game');
+                    finishBtn.disabled = false;
+                    finishBtn.className = 'bg-senac-orange hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-lg transition text-sm pixel-font glow-orange pulse-btn';
+                }
+            } else {
+                playSound('error');
+                feedback.textContent = '❌ Resposta incorreta. Revise as normas técnicas de suporte.';
+            }
+        }
+
+        /* ==========================================================================
+           GAME CONCLUSION & CERTIFICATE GENERATOR
+           ========================================================================== */
+        function finishGame() {
+            playSound('correct');
+            document.getElementById('screen-stage4').classList.add('hidden');
+            document.getElementById('screen-summary').classList.remove('hidden');
+
+            // Populate Final Summary Screen
+            document.getElementById('res-student-name').textContent = gameState.studentName;
+            document.getElementById('res-score').textContent = `${gameState.score} Pts`;
+            
+            // Calculate rank
+            let rankText = 'Técnico Nível Pleno';
+            if (gameState.score >= 1200) rankText = 'Técnico Destaque SENAC (100%)';
+            document.getElementById('res-rank').textContent = rankText;
+        }
+
+        function openCertificateModal() {
+            playSound('click');
+            document.getElementById('cert-student-name').textContent = gameState.studentName;
+            document.getElementById('cert-score').textContent = `${gameState.score} Pts`;
+            
+            const today = new Date().toLocaleDateString('pt-BR');
+            document.getElementById('cert-date').textContent = `Data: ${today}`;
+
+            document.getElementById('certificate-modal').classList.remove('hidden');
+        }
+
+        function closeCertificateModal() {
+            playSound('click');
+            document.getElementById('certificate-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
